@@ -738,9 +738,10 @@
             .findings-area textarea { min-height: 250px; }
         }
 
-        /* ===== ROLE SWITCHER ===== */
+        /* ===== ROLE SWITCHER (kept in DOM for internal logic, hidden from
+           view — role is now controlled by the login screen) ===== */
         .role-switcher {
-            display: flex;
+            display: none;
             gap: 10px;
             margin-bottom: 18px;
             background: #eef3fa;
@@ -773,6 +774,159 @@
         }
 
         .hidden-role { display: none !important; }
+
+        /* ===== LOGIN OVERLAY ===== */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0d2350, #1a3a5e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+        }
+        .login-overlay.hidden { display: none; }
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 36px 34px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            text-align: center;
+        }
+        .login-card h2 {
+            color: #0d2350;
+            margin-bottom: 4px;
+            font-size: 22px;
+        }
+        .login-card .login-sub {
+            color: #5a7a9a;
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+        .login-role-select {
+            display: flex;
+            gap: 10px;
+            background: #eef3fa;
+            padding: 6px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+        }
+        .login-role-select button {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            color: #44607f;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+        .login-role-select button.active {
+            background: #0d2350;
+            color: white;
+            box-shadow: 0 3px 10px rgba(13,35,80,0.25);
+        }
+        .login-card input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #dce6f2;
+            border-radius: 10px;
+            font-size: 15px;
+            margin-bottom: 12px;
+            font-family: 'Segoe UI', sans-serif;
+            letter-spacing: 2px;
+        }
+        .login-card input[type="password"]:focus {
+            outline: none;
+            border-color: #1a3a5e;
+        }
+        .login-error {
+            color: #b03a2e;
+            font-size: 13px;
+            margin-bottom: 10px;
+            min-height: 16px;
+            font-weight: 600;
+        }
+        .login-btn {
+            width: 100%;
+            background: #1a3a5e;
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .login-btn:hover { background: #0f2a45; }
+
+        /* ===== TOP PATIENT NAME BAR ===== */
+        .patient-name-topbar {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #0d2350;
+            border-radius: 16px;
+            padding: 14px 22px;
+            margin-bottom: 16px;
+            font-family: 'Segoe UI', sans-serif;
+            flex-wrap: wrap;
+        }
+        .patient-name-topbar label {
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .patient-name-topbar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Times New Roman', serif;
+            font-weight: 700;
+            color: #0d2350;
+        }
+        .patient-name-topbar input:focus { outline: 3px solid #e8637a; }
+        .session-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            color: #0d2350;
+            padding: 6px 8px 6px 16px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .session-pill .logout-btn {
+            border: none;
+            background: #b03a2e;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .session-pill .logout-btn:hover { background: #8a2c22; }
 
         /* ===== SHARED PATIENT LIST (visible to both roles) ===== */
         .patient-list-panel {
@@ -1197,7 +1351,34 @@
     </style>
 </head>
 <body>
-<div class="app-wrapper" id="appWrapper">
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+        <h2><i class="fas fa-lock"></i> Beergeel Clinic</h2>
+        <div class="login-sub">Sign in to continue</div>
+        <div class="login-role-select">
+            <button type="button" class="active" id="loginRoleDoctorBtn"><i class="fas fa-user-md"></i> Doctor</button>
+            <button type="button" id="loginRoleLabBtn"><i class="fas fa-flask"></i> Lab Technician</button>
+        </div>
+        <input type="password" id="loginPasswordInput" placeholder="Enter password" autocomplete="off">
+        <div class="login-error" id="loginError"></div>
+        <button class="login-btn" id="loginSubmitBtn" type="button"><i class="fas fa-right-to-bracket"></i> Login</button>
+    </div>
+</div>
+
+<div class="app-wrapper hidden-role" id="appWrapper">
+
+    <!-- ===== PATIENT NAME — TOP OF PAGE ===== -->
+    <div class="patient-name-topbar">
+        <label><i class="fas fa-user"></i> Patient Name:</label>
+        <input type="text" id="patientNameTop" placeholder="Type patient name here...">
+        <div class="session-pill" id="sessionPill">
+            <span id="sessionRoleLabel"><i class="fas fa-user-md"></i> Doctor</span>
+            <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
+        </div>
+    </div>
+
 
     <div class="top-bar">
         <div>
@@ -1309,7 +1490,9 @@
         <div class="row"><label>Endometrium</label><textarea id="endometriumText">The endometrial stripe is central, homogeneous, and well enclosed by a distinct halo. It measures within normal clinical limits for the patient's menstrual cycle phase. No endometrial polyp or thickening identified.</textarea></div>
         <div class="row"><label>Cervix</label><textarea id="cervixText">Normal in length and parenchymal appearance. No cystic or solid endocervical masses are seen. The internal and external os are closed. Cervical canal is unremarkable.</textarea></div>
         <div class="row"><label>Right Ovary</label><textarea id="ovaryText">Located in the normal anatomical position. Normal in size and volume. Normal ovarian stroma with normal symmetric follicular pattern. No abnormal solid or complex cystic lesions identified. No evidence of torsion.</textarea></div>
+        <div class="row"><label>Left Ovary</label><textarea id="ovaryLeftText">Located in the normal anatomical position. Normal in size and volume. Normal ovarian stroma with normal symmetric follicular pattern. No abnormal solid or complex cystic lesions identified. No evidence of torsion.</textarea></div>
         <div class="row"><label>Pouch of Douglas</label><textarea id="podText">No free fluid.</textarea></div>
+        <div class="row"><label>Conclusion</label><input type="text" id="conclusionPelvic" value="Normal pelvic ultrasound."></div>
     </div>
 
     <!-- FIRST TRIMESTER MODULE -->
@@ -1564,8 +1747,9 @@
                 findings += `Endometrium: ${document.getElementById('endometriumText').value}\n\n`;
                 findings += `Cervix: ${document.getElementById('cervixText').value}\n\n`;
                 findings += `Right Ovary: ${document.getElementById('ovaryText').value}\n\n`;
+                findings += `Left Ovary: ${document.getElementById('ovaryLeftText').value}\n\n`;
                 findings += `Pouch of Douglas: ${document.getElementById('podText').value}`;
-                impression = 'Normal pelvic ultrasound.';
+                impression = document.getElementById('conclusionPelvic').value || 'Normal pelvic ultrasound.';
             } else if (val === 'first') {
                 const pregType = document.getElementById('firstPregnancyType').value;
                 const fhr = document.getElementById('fhrFirst').value;
@@ -1855,6 +2039,7 @@
             document.getElementById('noUltrasound').checked = false;
             setNoUltrasoundMode(false);
             document.getElementById('patientName').value = 'Amina Hassan';
+            document.getElementById('patientNameTop').value = 'Amina Hassan';
             document.getElementById('patientAge').value = '32';
             document.getElementById('clinicalIndication').value = 'Routine antenatal follow-up';
             document.getElementById('signatureText').value = 'Dr. Khalid H. Beergeel';
@@ -1908,7 +2093,7 @@
                 'anomalies','placentaLocation','lowLyingCm','afiSdp','afiSdpValue','flac','efw','dopplerSelect',
                 'conclusionSecond','firstPregnancyType','gsFindings','gsDiameter','yolkSac','fetalPole','fhrFirst',
                 'gaBy','gaFirst','adnexaFirst','culdesacFirst','conclusionFirst','uterusText','endometriumText',
-                'cervixText','ovaryText','podText','noUltrasound'];
+                'cervixText','ovaryText','ovaryLeftText','podText','conclusionPelvic','noUltrasound'];
             const snapshot = { examType: examType.value };
             ids.forEach(id => {
                 const el = document.getElementById(id);
@@ -1982,21 +2167,105 @@
         const doctorView = document.getElementById('doctorView');
         const labPanel = document.getElementById('labPanel');
 
+        const sessionRoleLabel = document.getElementById('sessionRoleLabel');
+
         function setRole(role) {
             if (role === 'lab') {
                 roleLabBtn.classList.add('active');
                 roleDoctorBtn.classList.remove('active');
                 labPanel.classList.remove('hidden-role');
                 doctorView.classList.add('hidden-role');
+                if (sessionRoleLabel) sessionRoleLabel.innerHTML = '<i class="fas fa-flask"></i> Lab Technician';
             } else {
                 roleDoctorBtn.classList.add('active');
                 roleLabBtn.classList.remove('active');
                 labPanel.classList.add('hidden-role');
                 doctorView.classList.remove('hidden-role');
+                if (sessionRoleLabel) sessionRoleLabel.innerHTML = '<i class="fas fa-user-md"></i> Doctor';
             }
         }
         roleDoctorBtn.addEventListener('click', () => setRole('doctor'));
         roleLabBtn.addEventListener('click', () => setRole('lab'));
+
+        // =========================================================
+        // LOGIN (Doctor password: 1122 · Lab Technician password: 1234)
+        // =========================================================
+        const CLINIC_PASSWORDS = { doctor: '1122', lab: '1234' };
+        const loginOverlay = document.getElementById('loginOverlay');
+        const appWrapper = document.getElementById('appWrapper');
+        const loginRoleDoctorBtn = document.getElementById('loginRoleDoctorBtn');
+        const loginRoleLabBtn = document.getElementById('loginRoleLabBtn');
+        const loginPasswordInput = document.getElementById('loginPasswordInput');
+        const loginError = document.getElementById('loginError');
+        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        let selectedLoginRole = 'doctor';
+
+        function selectLoginRole(role) {
+            selectedLoginRole = role;
+            loginRoleDoctorBtn.classList.toggle('active', role === 'doctor');
+            loginRoleLabBtn.classList.toggle('active', role === 'lab');
+            loginError.textContent = '';
+        }
+        loginRoleDoctorBtn.addEventListener('click', () => selectLoginRole('doctor'));
+        loginRoleLabBtn.addEventListener('click', () => selectLoginRole('lab'));
+
+        function attemptLogin() {
+            const entered = loginPasswordInput.value.trim();
+            if (entered === CLINIC_PASSWORDS[selectedLoginRole]) {
+                sessionStorage.setItem('beergeelRole', selectedLoginRole);
+                loginError.textContent = '';
+                loginPasswordInput.value = '';
+                loginOverlay.classList.add('hidden');
+                appWrapper.classList.remove('hidden-role');
+                setRole(selectedLoginRole);
+            } else {
+                loginError.textContent = 'Incorrect password. Please try again.';
+                loginPasswordInput.value = '';
+                loginPasswordInput.focus();
+            }
+        }
+        loginSubmitBtn.addEventListener('click', attemptLogin);
+        loginPasswordInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') attemptLogin();
+        });
+
+        logoutBtn.addEventListener('click', function() {
+            sessionStorage.removeItem('beergeelRole');
+            appWrapper.classList.add('hidden-role');
+            loginOverlay.classList.remove('hidden');
+            loginPasswordInput.value = '';
+            loginError.textContent = '';
+            loginPasswordInput.focus();
+        });
+
+        // Restore session on page refresh within the same browser tab
+        (function restoreSession() {
+            const saved = sessionStorage.getItem('beergeelRole');
+            if (saved === 'doctor' || saved === 'lab') {
+                loginOverlay.classList.add('hidden');
+                appWrapper.classList.remove('hidden-role');
+                selectLoginRole(saved);
+                setRole(saved);
+            } else {
+                loginPasswordInput.focus();
+            }
+        })();
+
+        // =========================================================
+        // PATIENT NAME — TOP OF PAGE (kept in sync with the report field)
+        // =========================================================
+        const patientNameTop = document.getElementById('patientNameTop');
+        const patientNameReport = document.getElementById('patientName');
+        patientNameTop.addEventListener('input', function() {
+            patientNameReport.value = patientNameTop.value;
+            patientNameReport.dispatchEvent(new Event('input'));
+        });
+        patientNameReport.addEventListener('input', function() {
+            if (patientNameTop.value !== patientNameReport.value) {
+                patientNameTop.value = patientNameReport.value;
+            }
+        });
 
         // =========================================================
         // SHARED PATIENT LIST (visible to both Doctor & Lab Technician)
@@ -2134,6 +2403,7 @@
                 renderInvestigations();
                 renderLabReport();
                 document.getElementById('patientName').value = name;
+                document.getElementById('patientNameTop').value = name;
                 document.getElementById('patientId').value = '';
                 showLinkBanner('ok', `New patient "${name}" created. Add investigations and attach results below.`);
                 loadPatientList();
@@ -2235,6 +2505,7 @@
                 applyFormSnapshot(fullReport.form_data);
                 document.getElementById('patientId').value = fullReport.patient_id || '';
                 document.getElementById('patientName').value = fullReport.patient_name || '';
+                document.getElementById('patientNameTop').value = fullReport.patient_name || '';
                 setSyncStatus('saved', 'Loaded from cloud');
 
                 // Pull investigations + photos for this report
@@ -2590,6 +2861,7 @@
             // Patient-identifying fields and the date/serial should be blank/fresh,
             // not whatever the previous patient happened to leave behind.
             document.getElementById('patientName').value = '';
+            document.getElementById('patientNameTop').value = '';
             document.getElementById('patientAge').value = '';
             document.getElementById('patientId').value = '';
             document.getElementById('referringDoctor').value = '';
